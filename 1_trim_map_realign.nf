@@ -34,7 +34,6 @@ Channel
 // Step 1 - quality trimming
 process trimming {
 
-    module 'trimmomatic-uon/0.38-Java-1.8'
     errorStrategy 'ignore'
     publishDir 'trim', saveAs: { filename -> "$filename" }
 
@@ -56,7 +55,7 @@ process trimming {
     ## set the adapter fasta - need to find a way to change this
     ADAPT_FAST=/share/Passer/trimmomatic_adapters/${adapter}.fa
     ## run trimmometic
-    java -jar \$EBROOTTRIMMOMATIC/trimmomatic-0.38.jar PE $f_read $r_read \
+    trimmomatic PE $f_read $r_read \
     ${new_sample}.R1.trim_pair.fastq.gz ${new_sample}.R1.trim_unpair.fastq.gz \
     ${new_sample}.R2.trim_pair.fastq.gz ${new_sample}.R2.trim_unpair.fastq.gz \
     ILLUMINACLIP:\${ADAPT_FAST}:2:30:10 LEADING:10 TRAILING:10 SLIDINGWINDOW:5:10 MINLEN:50 \
@@ -66,9 +65,6 @@ process trimming {
 
 // Step 2 - align to reference genome
 process align {
-
-    module 'bwa-uoneasy/0.7.17-GCC-9.3.0'
-    module 'samtools-uoneasy/1.12-GCC-9.3.0'
 
     //publishDir 'align', saveAs: { filename -> "$filename" }
     errorStrategy 'ignore'
@@ -144,8 +140,8 @@ process align {
 // Step 3 - merge and sort
 process merge_sort {
 
-    module 'bwa-uoneasy/0.7.17-GCC-9.3.0'
-    module 'samtools-uoneasy/1.12-GCC-9.3.0'
+    //module 'bwa-uoneasy/0.7.17-GCC-9.3.0'
+    //module 'samtools-uoneasy/1.12-GCC-9.3.0'
 
     //publishDir 'align', saveAs: { filename -> "$filename" }
     errorStrategy 'ignore'
