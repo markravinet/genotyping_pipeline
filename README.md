@@ -76,7 +76,7 @@ Adapters should be written exactly as one of the following options:
 **Note** If your individual has multiple forward and reverse reads, these should all be entered into a separate row for the csv (i.e. for each forward and reverse pair). This will happen when an individual is sequenced across multiple lanes for example. The script is built to account for this and you can give each line the same sample name - **however** the read locations must be different for each. 
 
 An example of the file format is shown below:
-
+| old name | new name | read1 path | read2 path | adapter |
 |------------------|------------------|-------------------------|-------------------------|------------|
 | old_sample1_name | new_sample1_name | /path/to/forward_read1/ | /path/to/reverse_read1/ | TruSeq3-PE |
 | old_sample2_name | new_sample2_name | /path/to/forward_read2/ | /path/to/reverse_read2/ | TruSeqUD-PE |
