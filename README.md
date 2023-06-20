@@ -1,7 +1,7 @@
 # Variant calling pipeline
 
 ### Mark Ravinet 
-### 13/06/2023
+### 20/06/2023
 
 ## Introduction
 
@@ -77,6 +77,7 @@ Adapters should be written exactly as one of the following options:
 
 An example of the file format is shown below:
 
+|------------------|------------------|-------------------------|-------------------------|------------|
 | old_sample1_name | new_sample1_name | /path/to/forward_read1/ | /path/to/reverse_read1/ | TruSeq3-PE |
 | old_sample2_name | new_sample2_name | /path/to/forward_read2/ | /path/to/reverse_read2/ | TruSeqUD-PE |
 
@@ -109,6 +110,7 @@ Once complete, the script will create two directories with outputs in:
 
 1. `align` - this contains the mapped, realigned and sorted bamfiles with their indexes for each individual you ran the script on.
 2. `stats` - this directory contains statistics from each of the bamfiles for their mapping success and depth of coverage. More information below.
+
 
 ## Step 2  - variant calling
 
