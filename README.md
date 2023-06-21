@@ -43,8 +43,6 @@ We are then read to set up the `conda` environment you need to run the scripts.
 
 ### Configuring the conda environment
 
-
-
 Finally in order to ensure `abra2` can access the libraries it needs to run, you will need to add the following line to your `bash_profile`:
 
 ```
@@ -75,7 +73,7 @@ Adapters should be written exactly as one of the following options:
 
 **Note** If your individual has multiple forward and reverse reads, these should all be entered into a separate row for the csv (i.e. for each forward and reverse pair). This will happen when an individual is sequenced across multiple lanes for example. The script is built to account for this and you can give each line the same sample name - **however** the read locations must be different for each. 
 
-An example of the file format is shown below:
+An example of the file format is shown below - note that the true file **should not have headers**:
 | old name | new name | read1 path | read2 path | adapter |
 |------------------|------------------|-------------------------|-------------------------|------------|
 | old_sample1_name | new_sample1_name | /path/to/forward_read1/ | /path/to/reverse_read1/ | TruSeq3-PE |
@@ -111,8 +109,7 @@ Once complete, the script will create two directories with outputs in:
 1. `align` - this contains the mapped, realigned and sorted bamfiles with their indexes for each individual you ran the script on.
 2. `stats` - this directory contains statistics from each of the bamfiles for their mapping success and depth of coverage. More information below.
 
-
-## Step 2  - variant calling
+## Step 2 - Variant calling
 
 The second script in the pipeline will take a list of bamfiles and performs genotyping on all individuals. To do this, it uses `bcftools` and will call sites at every position in the genome (i.e. it calls invariant sites as well as variants). This is obviously a large job, especially on larger genomes. So to increase efficiency, the script parallelises across genome windows. The default is 10 Mb but you can set these to whatever size you wish. However, tweaking windows has to be done with a separate bash script (see below), not within the nextflow pipeline. After calling genotypes in windows, the script will take care of sorting and concatenating the windows together so that you are left with a vcf file for each chromosome, the mtDNA and also the unanchored scaffolds in your genome.
 
@@ -133,6 +130,8 @@ bash 0_create_genome_windows.sh /share/Passer/data/reference/house_sparrow_ref.f
 ```
 
 So option 1 is the path to the reference index, in `fai` format, option 2 is the window size (10 Mb here) and option 3 is the name of the output.
+
+Running this script will produce a set of different files. The first will be text file with a list of all the windows, i.e. `sparrow_genome_windows.list` in the example above. The second will be 10 files called `scaffolds:00`, `scaffolds:01` and so on. The pipeline needs all these files to be present in the base directory you are running nextflow in. 
 
 ### Creating a list of bams
 
@@ -160,6 +159,45 @@ As with all the scripts, you can use the `-resume` option to rerun from a checkp
 
 ### Script outputs
 
-The outputs for this script are much simpler - it will create a directory called `vcf` and inside will be the gz compressed vcf files for each chromosome, the mtDNA and the genome unanchored scaffolds. These will be raw (i.e. unfiltered) and will contain calls for all variant and non-variant sites in the genome. The directory will also include the indexes for these vcfs.
+The outputs for this script are much simpler than the previous step - it will create a directory called `vcf` and inside will be the gz compressed vcf files for each chromosome, the mtDNA and the genome unanchored scaffolds. These will be raw (i.e. unfiltered) and will contain calls for all variant and non-variant sites in the genome. The directory will also include the indexes for these vcfs.
 
-## Step 3
+## Step 3 - filtering
+
+The final script takes control of filtering your vcf files and prepares them for downstream analysis. First it normalises them to remove any issues from concatenating across windows in the calling step. Then it applies custom filters using `vcftools` to create two sets of vcfs; one for population structure analyses (i.e. variants only) and one for genome scan analyses (i.e. variant and invariant sites). There is more information on the outputs below.
+
+### Running the script
+
+The filtering script is the easiest of the three main pipeline scripts to run. It does not require any input as it will automatically look for any vcfs which are gzipped, indexed and which are stored in a directory called `./vcf` in the base directory it is run in. This means it can simply be run with the default filtering options like so:
+
+```
+nextflow run 3_filter_variants.nf 
+```
+
+However, [as shown here](https://speciationgenomics.github.io/filtering_vcfs/), it is not a good idea to just run filters without checking whether they apply to your dataset. Instead you are able to tweak the filters with a number of options. These are simply provided to the script using option flags and are modified versions of the options for [vcftools](https://vcftools.github.io/examples.html)
+
+- `--miss` - set the missing data at a value between 0 and 1 (where 0 allows 100% missing data and 1 means no missing data); default is 0.8
+- `--q_site1` - site quality threshold (as a phred score) for the population structure vcfs - default is 30
+- `--q_site2` - site quality threshold (as a phred score) for the genome scan vcfs - default is 30
+- `--min_depth` - minimum mean depth of coverage for a variant across all samples - default is 5
+- `--max_depth` - maximum mean depth of coverage for a variant across all samples - default is 30
+- `--min_geno_depth` - minimum genotype depth per sample. If lower than this value, the genotype will be converted to a missing site - default is 5
+- `--max_geno_depth` - maximum genotype depth per sample. If lower than this value, the genotype will be converted to a missing site - default is 30
+
+You can provide all or some of these options to the script using these options. A fully worked example is below:
+
+```
+nextflow run 3_filter_variants.nf --miss 0.5 --q_site1 30 --q_site2 40 --min_depth 5 --max_depth 15 --min_geno_depth 5 --max_geno_depth 15
+```
+
+You do not need to provide all the options - for example, if you want to just alter the missing data threshold, the following will work.
+
+```
+nextflow run 3_filter_variants.nf --miss 0.5 
+```
+
+### Script outputs
+
+The script will create a directory called `vcf_filtered`. Inside this vcf will be per chromosome (and scaffold) vcfs with two different suffixes.
+
+- `chrXX_norm_filtered_ps.vcf.gz` - this is the population structure analysis vcf - it contains variant biallelic SNPs only - ready for PCA, ADMIXTURE and so on.
+- `chrXX_norm_filtered_gs.vcf.gz` - this is the genome scan vcf - it contains variant and invariant sites - it is ready for both selection and introgression scans
