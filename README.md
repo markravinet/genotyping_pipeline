@@ -11,9 +11,14 @@ The scripts are designed to require minimal input from a user but they will prod
 
 There are three steps in the pipeline, each run using a specific nextflow script:
 
-1. `trim_map_realign` - trim reads for quality and adapter sequences, map to a reference genome and perform indel realignment
-2. `call_variants` - call variants across genome windows, concatenate them together to produce per chromosome vcf files
-3. `filter_variants` - filter vcfs for population structure and genome scan analysis
+1. `trim_map_realign` - trim reads for quality and adapter sequences, map to a reference genome and perform indel realignment.
+2. `call_variants` - call variants across genome windows, concatenate them together to produce per chromosome vcf files.
+3. `filter_variants` - filter vcfs for population structure and genome scan analysis.
+
+In addition to these scripts, there are three helper scripts which are optional. These are:
+
+1. `create_genome_windows` - a shell script to split your genome of choice into windows for `call_variants` to run on. So you can split the genome into 10 Mb windows and call variants much more efficiently.
+2. `concat_vcfs` - concatenate the variant vcfs created by `filter_variants` into a single vcf for the entire genome
 
 ## Installation
 
@@ -84,7 +89,7 @@ An example of the file format is shown below - note that the true file **should 
 Once you have your input csv file ready, you can run the script. To do this, you just need to do the following:
 
 ```
-nextflow run 1_trim_map_realign_v0.2.nf --samples samples_test.csv
+nextflow run 1_trim_map_realign.nf --samples samples_test.csv
 ```
 
 Note that if you run the script in this way, it will run in default mode and use the house sparrow reference genome. In order to alter that, you can add an additional option, `--ref` and specify the location of this alternative reference. Note that in order to do that, you **must** ensure that reference genome has been indexed by bwa prior to running the analysis. There is info on [how to do that here](https://speciationgenomics.github.io/mapping_reference/):
@@ -201,3 +206,24 @@ The script will create a directory called `vcf_filtered`. Inside this vcf will b
 
 - `chrXX_norm_filtered_ps.vcf.gz` - this is the population structure analysis vcf - it contains variant biallelic SNPs only - ready for PCA, ADMIXTURE and so on.
 - `chrXX_norm_filtered_gs.vcf.gz` - this is the genome scan vcf - it contains variant and invariant sites - it is ready for both selection and introgression scans
+
+### Creating a variants whole genome vcf
+
+The `3_filter_variants.nf` script will produce outputs per chromosome. This is done for downstream efficiency but it is sometimes useful to have a whole genome vcf for variants - i.e. the `chrXX_norm_filtered_ps.vcf.gz` vcfs. To produce this, you can use the script `4_concat_vcfs.slurm` which will concatenate all the chromosomes together and normalise the output. This is a slurm script that can be submitted but it needs editing first. You should edit the three variables declared at the start of the script:
+
+- `VCF_FILE` - a text file with the paths of the vcfs to concatenate into a single vcf - this MUST be in order
+- `OUTPUT_VCF1` - the name of the output vcf prior to normalisation
+- `OUTPUT_VCF2` - the name of the output vcf following normalisation
+
+The `VCF_FILE` should look like this:
+
+```
+/path/to/my/vcfs/chr1__norm_filtered_ps.vcf.gz
+/path/to/my/vcfs/chr2__norm_filtered_ps.vcf.gz
+/path/to/my/vcfs/chr3__norm_filtered_ps.vcf.gz
+/path/to/my/vcfs/chr4__norm_filtered_ps.vcf.gz
+/path/to/my/vcfs/chr5__norm_filtered_ps.vcf.gz
+```
+
+The order is important here and should match the order of the chromosomes in the reference genome. 
+
