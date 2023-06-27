@@ -21,7 +21,7 @@ Channel
         new_samples: [it[1]]
         f_reads: [it[0], it[1], it[2]]
         r_reads: [it[0], it[1], it[3]]
-        adapter: [it[4]]
+        adapter: it[4]
         }
     .set{result}
 
@@ -29,7 +29,7 @@ Channel
 // result.samples.view()
 // result.f_reads.view()
 // result.r_reads.view()
-// result.adapter.view()
+//result.adapter.view()
 
 // Step 1 - quality trimming
 process trimming {
@@ -246,7 +246,7 @@ process indel_realign_abra {
 // Step 6 - calculate  statistics
 process calc_stats {
 
-    module 'samtools-uoneasy/1.12-GCC-9.3.0'
+    //module 'samtools-uoneasy/1.12-GCC-9.3.0'
 
     publishDir 'stats', saveAs: { filename -> "$filename" }, mode: 'copy'
     errorStrategy 'ignore'
