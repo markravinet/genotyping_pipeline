@@ -17,8 +17,9 @@ There are three steps in the pipeline, each run using a specific nextflow script
 
 In addition to these scripts, there are three helper scripts which are optional. These are:
 
-1. `create_genome_windows` - a shell script to split your genome of choice into windows for `call_variants` to run on. So you can split the genome into 10 Mb windows and call variants much more efficiently.
-2. `concat_vcfs` - concatenate the variant vcfs created by `filter_variants` into a single vcf for the entire genome
+1. `downsample_bams` - a nextflow script that will calculate the depth of a bam, see if it exceeds a threshold you set and if so, downsample it to match that. This is useful if you are combining samples with different read depths. 
+2. `create_genome_windows` - a shell script to split your genome of choice into windows for `call_variants` to run on. So you can split the genome into 10 Mb windows and call variants much more efficiently.
+3. `concat_vcfs` - concatenate the variant vcfs created by `filter_variants` into a single vcf for the entire genome
 
 ## Installation
 
@@ -46,13 +47,35 @@ conda update conda
 
 We are then read to set up the `conda` environment you need to run the scripts.
 
+### Using mamba
+
+Conda can be quite slow, so a way to speed it up is to use `mamba`. This is easy to install. You can do so like this:
+
+```
+conda install -c conda-forge mamba
+```
+
+Once `mamba` is installed you are ready to configure the `conda` environment to use the pipeline.
+
 ### Configuring the conda environment
 
-Finally in order to ensure `abra2` can access the libraries it needs to run, you will need to add the following line to your `bash_profile`:
+In order to ensure you have all the tools needed to run the pipeline, you can configure the `conda` environment using the `nextflow.yml` provided here. This is also a reference of all the software versions used to run the code. It is very simple to do this, just use the following command:
+
+```
+mamba env create --name nf -f nextflow.yml 
+```
+
+This will create a `mamba`/`conda` environment called `nf` that contains all the software necessary to run the scripts with minimal manual configuration. 
+
+Finally in order to ensure `abra2` can access the libraries it needs to run, you will need to add the following line to your `bash_profile` or `bashrc`:
 
 ```
  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/miniconda3/lib
 ```
+
+### A quick note on Java based errors
+
+Although most of the tools for the pipeline should run without issue, you might get an error that some of the tools cannot run because there is no `java` environment. If this is the case, you need to either install `java` or load the `java` module on your cluster - the pipeline should then work without issue.
 
 ## Step 1  - trimming, mapping and aligning
 
@@ -113,6 +136,20 @@ Once complete, the script will create two directories with outputs in:
 
 1. `align` - this contains the mapped, realigned and sorted bamfiles with their indexes for each individual you ran the script on.
 2. `stats` - this directory contains statistics from each of the bamfiles for their mapping success and depth of coverage. More information below.
+
+## Step 1a - Downsampling bams
+
+Occassionally, you might need to combine data from sequencing runs with different depths. If this is the case, you will need to downsample individuals sequenced at a higher depth when combining them all together as otherwise this will bias your analysis. For example, in a PCA with 10X indiviudals vs 30X individuals, you will find differences between them that are driven by this variation in sequencing depth. The script `1a_downsample_bams.nf` is designed to handle this and is very easy to run and use.
+
+All you need to do is provide it with a list of bam files, identical to that you would use for the `2_call_variants.nf` (see **Creating a list of bams** below). For example:
+
+```
+nextflow run 1a_downsample_bams.nf --bams bams.list --depth 10
+```
+
+You should also provide the `--depth` option. The script will then calculate the depth of each sample, see if it is greater than 10X and if so, it will downsample the individuals to this level of coverage using `samtools`. If you don't add a `--depth` option, the script will default to 10 anyway but you can set this to whatever you wish.
+
+Once it has run, the script will only write outputs for the bams which exceeed the specified depth. These downsampled bams and their indexes will be written to the `align` directory with the suffix `_ds.bam` and `_ds.bam.bai` respectively. You can then use these in your variant calling analysis.
 
 ## Step 2 - Variant calling
 
@@ -218,11 +255,11 @@ The `3_filter_variants.nf` script will produce outputs per chromosome. This is d
 The `VCF_FILE` should look like this:
 
 ```
-/path/to/my/vcfs/chr1__norm_filtered_ps.vcf.gz
-/path/to/my/vcfs/chr2__norm_filtered_ps.vcf.gz
-/path/to/my/vcfs/chr3__norm_filtered_ps.vcf.gz
-/path/to/my/vcfs/chr4__norm_filtered_ps.vcf.gz
-/path/to/my/vcfs/chr5__norm_filtered_ps.vcf.gz
+/path/to/my/vcfs/chr1_norm_filtered_ps.vcf.gz
+/path/to/my/vcfs/chr2_norm_filtered_ps.vcf.gz
+/path/to/my/vcfs/chr3_norm_filtered_ps.vcf.gz
+/path/to/my/vcfs/chr4_norm_filtered_ps.vcf.gz
+/path/to/my/vcfs/chr5_norm_filtered_ps.vcf.gz
 ```
 
 The order is important here and should match the order of the chromosomes in the reference genome. 

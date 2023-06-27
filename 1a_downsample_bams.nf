@@ -20,6 +20,8 @@ Channel
 // Step 1 - calculate  statistics
 process cov {
 
+    publishDir 'stats', saveAs: { filename -> "$filename" }, mode: 'copy'
+    
     input:
     path (bam)
 
