@@ -183,6 +183,8 @@ So option 1 is the path to the reference index, in `fai` format, option 2 is the
 
 Running this script will produce a set of different files. The first will be text file with a list of all the windows, i.e. `sparrow_genome_windows.list` in the example above. The second will be 10 files called `scaffolds:00`, `scaffolds:01` and so on. The pipeline needs all these files to be present in the base directory you are running nextflow in. 
 
+**NB this script is only really tested on the house sparrow genome** - if it does not work for your genome, you will need to edit it. 
+
 ### Creating a list of bams
 
 The other input this script needs is a list of bamfiles. This is very simple - it is just a list of paths of the files that you intend to analyse. If you generated these using `1_trim_map_realign.nf` then the names should already be standardised as `samplename_realigned.bam`. Provided your bams are named this way, then the calling script will also ensure that the sample names are written into the final vcf. Here is an example of what the file should look like:
