@@ -73,6 +73,12 @@ Finally in order to ensure `abra2` can access the libraries it needs to run, you
  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/miniconda3/lib
 ```
 
+You might also need to increase the amount of memory that `abra2` has access to. In order to do this, you should use `nano` to edit the `~/miniconda3/envs/nf/share/abra2-2.23-1/abra2` so that the `JAVA_TOOL_OPTIONS` variable is increased like so:
+
+```
+JAVA_TOOL_OPTIONS="-Xmx8G"
+```
+
 ### A quick note on Java based errors
 
 Although most of the tools for the pipeline should run without issue, you might get an error that some of the tools cannot run because there is no `java` environment. If this is the case, you need to either install `java` or load the `java` module on your cluster - the pipeline should then work without issue.
@@ -90,6 +96,8 @@ In order to run this script, you need to provide it with a csv file with the fol
 3. Forward read location - this should be the **full path** to the forward read
 4. Reverse read location - this should be the **full path** to the reverse read
 5. Adapter name - the name for the adapter sequences - this should be one of the set of options outlined below.
+
+**A quick note on sample names!** The script will split names based on underscores, so if your samples are called `FH_99` and `FH_100` for example, it will merge them all into a sample called `FH`. So to avoid this, you need to alter them so that they are called `FH99` and `FH100`
 
 Adapters should be written exactly as one of the following options:
 - `Illumina_UD-PE`
@@ -197,7 +205,7 @@ Once you have your list of bams and genome windows file ready, you can run the s
 nextflow run 2_call_variants.nf --bams bams.list --windows sparrow_genome_windows.list
 ```
 
-As with all the scripts, you can use the `-resume` option to rerun from a checkpoint if it fails for any reason.
+As above, you can use the `--ref` option to set the location of a specific reference genome. Furthermore, as with all the scripts, you can use the `-resume` option to rerun from a checkpoint if it fails for any reason.
 
 ### Script outputs
 
@@ -264,3 +272,22 @@ The `VCF_FILE` should look like this:
 
 The order is important here and should match the order of the chromosomes in the reference genome. 
 
+## Submitting the nextflow pipeline via slurm
+
+The nextflow scripts will take care of the individual scheduling of jobs, but you will need to submit a management job to the cluster using a standard slurm script. This script should be set to run with a relatively low memory (i.e. 4-8Gb), a single CPU and a relatively long time for the entire pipeline to run. For example, you could run it for a week. 
+
+The actual control for each of the different jobs that the nextflow pipeline submits, you should look at the `nextflow.config` file. This is already to set up to use slurm. However, slurm job schedulers will differ between institutions. For the Nottingham Augusta HPC, the `nextflow.config` file will work straight out of the box as it inherits the queue and settings you submit in the master script. For SAGA, you need to edit the `nextflow.config` file to get it to work. You will need to add the `account` value for all of the processes like so, where `XXX` is the account you use on the cluster.
+
+```
+   withName: trimming{
+   clusterOptions = " --account=XXX --job-name=trim --time=12:00:00 --mem-per-cpu=20G --cpus-per-task=1"
+   }
+```
+
+**NB if you want to test the pipeline locally** you need to change the name of the `nextflow.config` file so that it is not read by the pipeline automatically. For example, just do this:
+
+```
+mv nextflow.config nextflow_config
+```
+
+Just remember that when you do go back to submitting the nextflow script, you must change this back so that the pipeline will resume the slurm execution. 
