@@ -6,8 +6,7 @@
 
 // script paramaters
 params.ref = file('/share/Passer/data/reference/house_sparrow_ref.fa')
-params.gatk_java = '$HOME/miniconda3/envs/gatk/bin/java'
-params.gatk_engine = '/share/Passer/gatk/gatk3.8.0/GenomeAnalysisTK.jar'
+params.trim = path('/share/Passer/trimmomatic_adapters')
 
 // read in a csv of sample, read 1 and read 2
 // params.samples = file('samples_test.csv')
@@ -53,7 +52,7 @@ process trimming {
 
     """
     ## set the adapter fasta - need to find a way to change this
-    ADAPT_FAST=/share/Passer/trimmomatic_adapters/${adapter}.fa
+    ADAPT_FAST=${trim}/${adapter}.fa
     ## run trimmometic
     trimmomatic PE $f_read $r_read \
     ${new_sample}.R1.trim_pair.fastq.gz ${new_sample}.R1.trim_unpair.fastq.gz \
@@ -150,8 +149,8 @@ process merge_sort {
     tuple val(sample), path(bams, stageAs: "?/*")
 
     output:
-    tuple val(sample), path("${sample}_merge_sort.bam")
-    
+    tuple val(sample), path(bams, stageAs: "?/bam?.bam")
+
     script:
     def bam_list = bams instanceof List ? bams.join(" ") : bams
     """
