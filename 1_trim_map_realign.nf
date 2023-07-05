@@ -52,7 +52,7 @@ process trimming {
 
     """
     ## set the adapter fasta - need to find a way to change this
-    ADAPT_FAST=${trim}/${adapter}.fa
+    ADAPT_FAST=${params.trim}/${adapter}.fa
     ## run trimmometic
     trimmomatic PE $f_read $r_read \
     ${new_sample}.R1.trim_pair.fastq.gz ${new_sample}.R1.trim_unpair.fastq.gz \
