@@ -6,7 +6,7 @@
 
 // script paramaters
 params.ref = file('/share/Passer/data/reference/house_sparrow_ref.fa')
-params.trim = path('/share/Passer/trimmomatic_adapters')
+params.trim = file('/share/Passer/trimmomatic_adapters')
 
 // read in a csv of sample, read 1 and read 2
 // params.samples = file('samples_test.csv')
@@ -146,10 +146,10 @@ process merge_sort {
     errorStrategy 'ignore'
 
     input:
-    tuple val(sample), path(bams, stageAs: "?/*")
+    tuple val(sample), path(bams, stageAs: "?/bam?.bam")
 
     output:
-    tuple val(sample), path(bams, stageAs: "?/bam?.bam")
+    tuple val(sample), path("${sample}_merge_sort.bam")
 
     script:
     def bam_list = bams instanceof List ? bams.join(" ") : bams
