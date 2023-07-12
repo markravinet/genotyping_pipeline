@@ -180,7 +180,7 @@ process mark_dup {
     """
     # mark duplicates
     echo "**** Running Picard MarkDuplicates on ${sample} ****"
-    picard MarkDuplicates -I merge_sort.bam -O ${sample}_dedup.bam -M ${sample}_dedup_metrics.txt --TMP_DIR ./run_tmp
+    picard -Xmx16G MarkDuplicates -I merge_sort.bam -O ${sample}_dedup.bam -M ${sample}_dedup_metrics.txt --TMP_DIR ./run_tmp
 
     # index bams
     echo "**** Running Picard BuildBamIndex on ${sample} ****"
