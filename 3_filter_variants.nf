@@ -15,6 +15,7 @@ params.min_depth=5
 params.max_depth=30
 params.min_geno_depth=5
 params.max_geno_depth=30
+params.keep="./path/to/file"
 
 // Step 1 - normalise -  remove spanning deletions,indels and normalise
 process normalise {
@@ -54,27 +55,60 @@ process filter_vcf {
     file ("${norm_vcf.simpleName}_filtered_gs.vcf.gz.csi") 
 
   """
-  # for pop structure
-  vcftools --gzvcf $norm_vcf  --remove-indels --remove-filtered-all \
-  --min-alleles 2 --max-alleles 2 \
-  --max-missing ${params.miss} --minQ ${params.q_site1} \
-  --min-meanDP ${params.min_depth} --max-meanDP ${params.max_depth} \
-  --minDP ${params.min_geno_depth} --maxDP ${params.max_geno_depth} \
-  --recode --recode-INFO-all --stdout | \
-  bcftools view -e 'N_ALT>1' -O z -o ${norm_vcf.simpleName}_filtered_ps.vcf.gz
+  if [[ -f ${params.keep} ]]; then
 
-  bcftools index ${norm_vcf.simpleName}_filtered_ps.vcf.gz
+    echo "File of individuals to filter provided - adding --keep option."
 
-  # for genome scans
+    # for pop structure
+    vcftools --gzvcf $norm_vcf  --remove-indels --remove-filtered-all \
+    --keep ${params.keep} \
+    --min-alleles 2 --max-alleles 2 \
+    --max-missing ${params.miss} --minQ ${params.q_site1} \
+    --min-meanDP ${params.min_depth} --max-meanDP ${params.max_depth} \
+    --minDP ${params.min_geno_depth} --maxDP ${params.max_geno_depth} \
+    --recode --recode-INFO-all --stdout | \
+    bcftools view -e 'N_ALT>1' -O z -o ${norm_vcf.simpleName}_filtered_ps.vcf.gz
+
+    bcftools index ${norm_vcf.simpleName}_filtered_ps.vcf.gz
+
+    # for genome scans
     vcftools --gzvcf $norm_vcf --remove-indels --remove-filtered-all \
-  --max-alleles 2 \
-  --minQ ${params.q_site2} \
-  --min-meanDP ${params.min_depth} --max-meanDP ${params.max_depth} \
-  --minDP ${params.min_geno_depth} --maxDP ${params.max_geno_depth} \
-  --recode --recode-INFO-all --stdout | \
-  bcftools view -e 'N_ALT>1' -O z -o ${norm_vcf.simpleName}_filtered_gs.vcf.gz
+    --keep ${params.keep} \
+    --max-alleles 2 \
+    --minQ ${params.q_site2} \
+    --min-meanDP ${params.min_depth} --max-meanDP ${params.max_depth} \
+    --minDP ${params.min_geno_depth} --maxDP ${params.max_geno_depth} \
+    --recode --recode-INFO-all --stdout | \
+    bcftools view -e 'N_ALT>1' -O z -o ${norm_vcf.simpleName}_filtered_gs.vcf.gz
+    
+    bcftools index ${norm_vcf.simpleName}_filtered_gs.vcf.gz
 
-  bcftools index ${norm_vcf.simpleName}_filtered_gs.vcf.gz
+  else
+
+    echo "Not filtering for specific individuals"
+    # for pop structure
+    vcftools --gzvcf $norm_vcf  --remove-indels --remove-filtered-all \
+    --min-alleles 2 --max-alleles 2 \
+    --max-missing ${params.miss} --minQ ${params.q_site1} \
+    --min-meanDP ${params.min_depth} --max-meanDP ${params.max_depth} \
+    --minDP ${params.min_geno_depth} --maxDP ${params.max_geno_depth} \
+    --recode --recode-INFO-all --stdout | \
+    bcftools view -e 'N_ALT>1' -O z -o ${norm_vcf.simpleName}_filtered_ps.vcf.gz
+
+    bcftools index ${norm_vcf.simpleName}_filtered_ps.vcf.gz
+
+    # for genome scans
+      vcftools --gzvcf $norm_vcf --remove-indels --remove-filtered-all \
+    --max-alleles 2 \
+    --minQ ${params.q_site2} \
+    --min-meanDP ${params.min_depth} --max-meanDP ${params.max_depth} \
+    --minDP ${params.min_geno_depth} --maxDP ${params.max_geno_depth} \
+    --recode --recode-INFO-all --stdout | \
+    bcftools view -e 'N_ALT>1' -O z -o ${norm_vcf.simpleName}_filtered_gs.vcf.gz
+    
+    bcftools index ${norm_vcf.simpleName}_filtered_gs.vcf.gz
+
+  fi
   """
 
 }
