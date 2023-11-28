@@ -40,7 +40,7 @@ process cov {
         #FRAC=\$(expr ${params.depth} \* \${COV})
         FRAC=\$(echo "scale=1; ${params.depth}/\${COV}" | bc)
         echo "Will downsampled by \${FRAC}"
-        samtools view -bs 0.5 ${bam} > ${bam.simpleName}_ds.bam
+        samtools view -bs \${FRAC} ${bam} > ${bam.simpleName}_ds.bam
         samtools index ${bam.simpleName}_ds.bam
 
     else
