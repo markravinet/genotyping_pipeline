@@ -250,7 +250,7 @@ nextflow run 3_filter_variants.nf --miss 0.5
 You can also now filter for individuals. This is optional, if you run `3_filter_variants.nf` without any options, it will just include all individuals in the vcf. However if you use `--keep`, the pipeline return a vcf with only those individuals listed in the input file. An example of how to run this is like so:
 
 ```
-nextflow run 3_filter_variants.nf --keep my_inds.txt
+nextflow run 3_filter_variants.nf --keep /path/to/my_inds.txt
 ```
 
 Here the file provided to the `--keep` option is the same as that used by [`vcftools`](https://vcftools.github.io/man_latest.html) - i.e. this should be a list of individuals like so:
@@ -260,6 +260,8 @@ Ind1
 Ind2
 Ind3
 ```
+
+One thing that is very important if you use the `--keep` option. You **must** provide a full path to the file - i.e. `/path/to/my_inds.txt` - otherwise it will not filter for these individuals.
 
 ### Script outputs
 
