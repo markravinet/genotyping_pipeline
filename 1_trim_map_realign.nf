@@ -3,10 +3,11 @@
 // nextflow pipeline for genotyping samples
 // developed by Mark Ravinet - 06/02/2023
 // v 0.3 - 15/06/2023
+// v 0.4 - 24/06/2024
 
 // script paramaters
-params.ref = file('/share/Passer/data/reference/house_sparrow_ref.fa')
-params.trim = file('/share/Passer/trimmomatic_adapters')
+params.ref = file('/cluster/projects/nn10082k/ref/house_sparrow_genome_assembly-18-11-14_masked.fa')
+params.trim = file('/cluster/projects/nn10082k/trimmomatic_adapters/')
 
 // read in a csv of sample, read 1 and read 2
 // params.samples = file('samples_test.csv')
@@ -231,9 +232,9 @@ process indel_realign_abra {
     tuple val(sample), path("${sample}_realigned.bam"), path("${sample}_realigned.bam.bai")
 
     """
-    ## set up tmpdir
-    mkdir abra_tmp
-    abra2 --in ${sample}_dedup.bam --out ${sample}_realigned.bam --ref ${params.ref} --threads 16 --tmpdir abra_tmp
+    mkdir ./abra_tmp
+    export TMPDIR=./abra_tmp
+    abra2 --in ${sample}_dedup.bam --out ${sample}_realigned.bam --ref ${params.ref} --threads 16 --tmpdir ./abra_tmp
 
     ### INDEX
     echo "**** Running Picard BuildBamIndex on  ${sample} ****"
@@ -254,7 +255,7 @@ process calc_stats {
     tuple val(sample), path(bam), path(index)
 
     output:
-    tuple path("${sample}_meancov.txt"), path("${sample}.map.stat.csv")
+    tuple path("${sample}_meancov.txt"), path("${sample}.map.stat.csv"), path("${sample}_flagstat.csv")
 
     """
     # work out mean coverage
